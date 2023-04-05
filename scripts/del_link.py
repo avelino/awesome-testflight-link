@@ -70,27 +70,27 @@ def renew_readme():
 def main():
     testflight_link = sys.argv[1]
     table = sys.argv[2].lower()
-    
+
     link_id_match = re.search(r"^https://testflight.apple.com/join/(.*)$", testflight_link, re.I)
     if link_id_match is not None:
-        testflight_link = link_id_match.group(1)
+        testflight_link = link_id_match[1]
     else:
-        print(f"[Error] Invalid testflight_link. Exit...")
+        print("[Error] Invalid testflight_link. Exit...")
         exit(1)
 
     if table not in TABLE_MAP or table == "signup":
-        print(f"[Error] Invalid table. Exit...")
+        print("[Error] Invalid table. Exit...")
         exit(1)
 
     # 从数据库删除
     conn = sqlite3.connect('../db/sqlite3.db')
-    cur = conn.cursor()    
+    cur = conn.cursor()
     sql = f"SELECT * FROM {table} WHERE testflight_link = '{testflight_link}';"
     res = cur.execute(sql)
-    if len(list(res)) == 0:
+    if not list(res):
         print(f"[warn] Data (https://testflight.apple.com/join/{testflight_link}) not found in table ({table}).")
         exit(0)
-    
+
     sql = f"DELETE FROM {table} WHERE testflight_link = '{testflight_link}';"
     cur.execute(sql)
     conn.commit()

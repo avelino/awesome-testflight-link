@@ -36,9 +36,7 @@ def get_old_status(table):
     conn = sqlite3.connect('../db/sqlite3.db')
     cur = conn.cursor()
     res = cur.execute(f"SELECT testflight_link, status FROM {table};")
-    res_dict = {}
-    for row in res:
-        res_dict[row[0]] = row[1]
+    res_dict = {row[0]: row[1] for row in res}
     conn.close()
     return res_dict
 
@@ -138,7 +136,7 @@ async def check_status(session, key, retry=10):
 async def main():
     # 稳妥起见限制同时 3 个同 host 的请求
     conn = aiohttp.TCPConnector(limit=10, limit_per_host=1)
-    
+
     headers = {
         "User-Agent": uas[UA_NUM]
     }
@@ -148,26 +146,20 @@ async def main():
                 continue
             old_status = get_old_status(table)
             link_keys = old_status.keys()
-            coroutines_list = []
-            for key in link_keys:
-                coroutines_list.append(check_status(session, key))
+            coroutines_list = [check_status(session, key) for key in link_keys]
             result = await asyncio.gather(*coroutines_list) # 正常情况下返回列表的顺序与传入顺序相同，稳妥起见&方便后续处理还是在 check_status() 返回值加个 key
-            change_list = []
-            for row in result:
-                if old_status[row[0]] != row[1]:
-                    change_list.append(row)
-
+            change_list = [row for row in result if old_status[row[0]] != row[1]]
             changed = update_status(table, change_list)
             print(f"[info] Changed {changed} rows in {table}.")
             renew_doc(TABLE_MAP[table], table)
 
 if __name__ == "__main__":
     os.chdir(sys.path[0])
-    
+
     loop = asyncio.get_event_loop()
-    uas = [user_agent() for i in range(100)]
+    uas = [user_agent() for _ in range(100)]
     loop.run_until_complete(main())
-    
+
     renew_readme()
 
-    print(f"[info] All Done!")
+    print("[info] All Done!")

@@ -49,7 +49,7 @@ def process(data_file, table):
             status, last_modify = columns[3:5] if len(columns)>4 else [""] * 2
             link_id_match = re.search(r"\]\(https://testflight.apple.com/join/(.*)\)", testflight_link, re.I)
             if link_id_match is not None:
-                testflight_link = link_id_match.group(1)
+                testflight_link = link_id_match[1]
             else:
                 print(f"[Warn] Invalid testflight_link, record(will be save into ./data/sign_up.md): \n\t\"{columns}\"")
                 INVALID_DATA.append(line)
@@ -68,7 +68,7 @@ def process(data_file, table):
                 print(f"[sqlite3.IntegrityError - 2] Table: {table}; Data: {data}")
             except Exception as e:
                 raise e
-    
+
     conn.commit()
     print(f"[info] Writed {conn.total_changes} rows into table: {table}")
 
@@ -77,10 +77,7 @@ def process(data_file, table):
 def other_links():
     with open('./data/signup.md', 'r+') as f:
         exists_data = f.readlines()
-        temp = []
-        for line in INVALID_DATA:
-            if line not in exists_data:
-                temp.append(line)
+        temp = [line for line in INVALID_DATA if line not in exists_data]
         f.writelines(temp)
         if len(temp):
             print(f"[info] Write {len(temp)} raws to ./data/signup.md")
@@ -94,7 +91,7 @@ def main():
 
 if __name__ == "__main__":
     os.chdir(sys.path[0])
-    
+
     main()
 
-    print(f"[info] All Done!")
+    print("[info] All Done!")
