@@ -112,29 +112,28 @@ async def main():
     table = sys.argv[2].lower()
     app_name = sys.argv[3]
     last_modify = TODAY
-    
+
     link_id_match = re.search(r"^https://testflight.apple.com/join/(.*)$", testflight_link, re.I)
     if link_id_match is not None:
-        testflight_link = link_id_match.group(1)
+        testflight_link = link_id_match[1]
     else:
-        print(f"[Error] Invalid testflight_link. Exit...")
+        print("[Error] Invalid testflight_link. Exit...")
         exit(1)
 
     if table not in TABLE_MAP or table == "signup":
-        print(f"[Error] Invalid table. Exit...")
+        print("[Error] Invalid table. Exit...")
         exit(1)
 
     if app_name is None or app_name == "":
         app_name = "None"
-    
+
     # 稳妥起见限制同时 5 个同 host 的请求
     conn = aiohttp.TCPConnector(limit=10, limit_per_host=5)
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/53.0.2357.130 Safari/537.36 qblink wegame.exe QBCore/3.70.66.400 QQBrowser/9.0.2524.400"
     }
     async with aiohttp.ClientSession(BASE_URL, connector=conn, headers=headers) as session:
-        coroutines_list = []
-        coroutines_list.append(check_status(session, testflight_link))
+        coroutines_list = [check_status(session, testflight_link)]
         result = await asyncio.gather(*coroutines_list)
         for row in result:
             if app_name.capitalize() == "None":
@@ -143,7 +142,7 @@ async def main():
 
     # 插入数据库
     conn = sqlite3.connect('../db/sqlite3.db')
-    cur = conn.cursor()    
+    cur = conn.cursor()
     sql = f"INSERT INTO {table} (app_name, testflight_link, status, last_modify) VALUES(?, ?, ?, ?);"
     data = (app_name, testflight_link, status, last_modify)
     try:
